@@ -1,0 +1,19 @@
+{
+  "name": "overload",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "dev": "concurrently \"npm run dev --prefix backend\" \"npm start --prefix frontend\"",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "docs:generate": "node scripts/generate-docs.js",
+    "docs:watch": "node scripts/docs-watch.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "devDependencies": { 
+    "concurrently": "^8.2.2"
+  }
+}

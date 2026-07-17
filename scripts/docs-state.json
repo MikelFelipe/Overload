@@ -1,0 +1,265 @@
+{
+  "generatedAt": "2026-07-15T09:22:53.237Z",
+  "files": {
+    ".env": {
+      "size": 328,
+      "modifiedAt": "2026-07-12T05:16:12.008Z",
+      "hash": "ee785894f6123a6a2db5149ce7e7522d147a1e6f"
+    },
+    ".gitignore": {
+      "size": 666,
+      "modifiedAt": "2026-07-15T09:10:12.914Z",
+      "hash": "9ff1dd019437037d311c12cb8ffaa22a5b3c16f9"
+    },
+    ".vscode/settings.json": {
+      "size": 115,
+      "modifiedAt": "2026-07-12T05:47:55.404Z",
+      "hash": "133f86864e43ff083729f2ab39caac1a680d65f3"
+    },
+    "README.md": {
+      "size": 580,
+      "modifiedAt": "2026-07-15T08:51:01.494Z",
+      "hash": "57c0a1508c81c294c0ecb1b9f28258927ad4561b"
+    },
+    "backend/package-lock.json": {
+      "size": 91299,
+      "modifiedAt": "2026-07-15T09:06:12.333Z",
+      "hash": "c225a2555ee97b1108947edd42d7911a9a4e5010"
+    },
+    "backend/package.json": {
+      "size": 977,
+      "modifiedAt": "2026-07-15T09:09:50.006Z",
+      "hash": "e09233fb034a5a371699fbc4f1c0ea3bb2f927e0"
+    },
+    "backend/src/config/cosmos.ts": {
+      "size": 2073,
+      "modifiedAt": "2026-07-15T08:18:11.682Z",
+      "hash": "86875763b130575c09e4c3d10b14c4507a54c165"
+    },
+    "backend/src/index.ts": {
+      "size": 995,
+      "modifiedAt": "2026-07-15T08:18:13.232Z",
+      "hash": "f157edf0b1bba0bc5ef673955cd76cbef59609cc"
+    },
+    "backend/src/middleware/auth.middleware.ts": {
+      "size": 651,
+      "modifiedAt": "2026-07-15T08:18:17.236Z",
+      "hash": "918e0a85b4d79df7d23669d624edc04f220e82f8"
+    },
+    "backend/src/models/user.model.ts": {
+      "size": 726,
+      "modifiedAt": "2026-07-15T08:18:10.068Z",
+      "hash": "238a12613f48ff2def32b56cf530671be326035e"
+    },
+    "backend/src/routes/auth.routes.ts": {
+      "size": 2893,
+      "modifiedAt": "2026-07-15T08:19:46.787Z",
+      "hash": "44b2032684c448f77ffb8fc75206d0c4e0a6adb3"
+    },
+    "backend/src/services/auth.service.ts": {
+      "size": 12865,
+      "modifiedAt": "2026-07-15T08:41:06.864Z",
+      "hash": "83bc6de4446a57024976aef1b74822dacea28e55"
+    },
+    "backend/src/utils/hash.ts": {
+      "size": 302,
+      "modifiedAt": "2026-07-15T08:18:05.973Z",
+      "hash": "234fdaabefb966f5020c39b29d768cf737ad2262"
+    },
+    "backend/tsconfig.json": {
+      "size": 359,
+      "modifiedAt": "2026-07-12T05:24:52.204Z",
+      "hash": "db6c72ac87586ad3aedf9d3974bc508789dffe02"
+    },
+    "frontend/.env": {
+      "size": 43,
+      "modifiedAt": "2026-07-12T07:04:42.582Z",
+      "hash": "d59402649bcb4401190b40c3551dfd01fa0d158e"
+    },
+    "frontend/.gitignore": {
+      "size": 310,
+      "modifiedAt": "2026-07-10T17:18:17.286Z",
+      "hash": "4ed5f67102584810fffa278ec3228abf8fb0bba2"
+    },
+    "frontend/.vscode/settings.json": {
+      "size": 106,
+      "modifiedAt": "2026-07-12T07:14:19.278Z",
+      "hash": "52a7f9060c65ac92e24fdc864a84fdf60809a54a"
+    },
+    "frontend/README.md": {
+      "size": 498,
+      "modifiedAt": "2026-07-15T08:51:01.494Z",
+      "hash": "2a21d13bdbb38a303f0db1b5728becb6e9692614"
+    },
+    "frontend/package-lock.json": {
+      "size": 665165,
+      "modifiedAt": "2026-07-15T09:15:54.303Z",
+      "hash": "d6370b8c7fae3fc495b988fc1eccc41fdc1a11db"
+    },
+    "frontend/package.json": {
+      "size": 1304,
+      "modifiedAt": "2026-07-15T09:09:50.006Z",
+      "hash": "0ac2347364637ca7f0841f05b1fff74e9ae38859"
+    },
+    "frontend/postcss.config.js": {
+      "size": 86,
+      "modifiedAt": "2026-07-10T17:29:02.697Z",
+      "hash": "705b7ec74abc92c2f26aeebb92b6ad21a06a5331"
+    },
+    "frontend/public/favicon.ico": {
+      "size": 3870,
+      "modifiedAt": "2026-07-10T17:18:22.546Z",
+      "hash": "c5b4b348ed1b8d5b6d66c9593977ef210603a437"
+    },
+    "frontend/public/index.html": {
+      "size": 1721,
+      "modifiedAt": "2026-07-10T17:18:21.736Z",
+      "hash": "eb9712017b86133214b5f7988750f0456d3b618d"
+    },
+    "frontend/public/logo192.png": {
+      "size": 5347,
+      "modifiedAt": "2026-07-10T17:18:24.370Z",
+      "hash": "4bf7804d96dcee2555e38d15b7772ef6061eaff6"
+    },
+    "frontend/public/logo512.png": {
+      "size": 9664,
+      "modifiedAt": "2026-07-10T17:18:24.751Z",
+      "hash": "e668cbafda9c62912a77bba663fc10d09a2327d3"
+    },
+    "frontend/public/manifest.json": {
+      "size": 492,
+      "modifiedAt": "2026-07-10T17:18:23.211Z",
+      "hash": "4e0afe7f81a71f41366cd7859ca34776b8107923"
+    },
+    "frontend/public/robots.txt": {
+      "size": 67,
+      "modifiedAt": "2026-07-10T17:18:27.089Z",
+      "hash": "044ce68f83ee8543475fea16f6e3a73d28a1c6d5"
+    },
+    "frontend/src/App.css": {
+      "size": 564,
+      "modifiedAt": "2026-07-10T17:18:19.912Z",
+      "hash": "0be63cf9418edda239b2c4eedf70b0d157fdbedf"
+    },
+    "frontend/src/App.test.tsx": {
+      "size": 394,
+      "modifiedAt": "2026-07-15T08:28:41.062Z",
+      "hash": "c5d32bdfb4e7c0b31f7ae499165db8efea7803a4"
+    },
+    "frontend/src/App.tsx": {
+      "size": 1220,
+      "modifiedAt": "2026-07-15T08:21:03.857Z",
+      "hash": "3d300ed05290ce888b1da6bd70456faa75c4e79f"
+    },
+    "frontend/src/api/auth.ts": {
+      "size": 901,
+      "modifiedAt": "2026-07-15T08:20:55.041Z",
+      "hash": "487ae766db36592aee1b6bac02bcf6f3077db5c5"
+    },
+    "frontend/src/api/client.ts": {
+      "size": 221,
+      "modifiedAt": "2026-07-15T08:52:19.931Z",
+      "hash": "dde2839aba12ccb662f752bdc9cdc2039c0a62d0"
+    },
+    "frontend/src/components/PrivateRoute.tsx": {
+      "size": 554,
+      "modifiedAt": "2026-07-15T08:21:01.665Z",
+      "hash": "8730963becf5fae835110cc9404cee11708de605"
+    },
+    "frontend/src/context/AuthContext.tsx": {
+      "size": 1845,
+      "modifiedAt": "2026-07-15T08:20:59.696Z",
+      "hash": "7359e2c1ea1564b5b2cf87eb222834c4c3188ea2"
+    },
+    "frontend/src/index.css": {
+      "size": 319,
+      "modifiedAt": "2026-07-12T07:03:53.101Z",
+      "hash": "f5dde1917c927e5a26e79666314409bab324d0e7"
+    },
+    "frontend/src/index.tsx": {
+      "size": 326,
+      "modifiedAt": "2026-07-12T05:50:45.275Z",
+      "hash": "144e56c0761d90ddff148f86f5d2cca0f3c4635b"
+    },
+    "frontend/src/logo.svg": {
+      "size": 2632,
+      "modifiedAt": "2026-07-10T17:18:25.001Z",
+      "hash": "df904d014e54fb8b536f2fce3949d9f858d5a86a"
+    },
+    "frontend/src/pages/Dashboard.tsx": {
+      "size": 1361,
+      "modifiedAt": "2026-07-12T07:08:58.882Z",
+      "hash": "a88dd59acf8e6fa498bfb245c62f07458057f821"
+    },
+    "frontend/src/pages/Login.tsx": {
+      "size": 2394,
+      "modifiedAt": "2026-07-15T08:21:54.570Z",
+      "hash": "63e4c81a2da43b0963b41334a20e46bd08e1ad26"
+    },
+    "frontend/src/pages/Otp.tsx": {
+      "size": 2630,
+      "modifiedAt": "2026-07-15T08:22:01.599Z",
+      "hash": "844229ab9c8bddff696e55dc9ba7c931655ff06b"
+    },
+    "frontend/src/pages/Register.tsx": {
+      "size": 5705,
+      "modifiedAt": "2026-07-15T08:41:06.865Z",
+      "hash": "9f8f6a3ab7262592e0d63fd857a2a3c24c4a23f7"
+    },
+    "frontend/src/pages/Verify.tsx": {
+      "size": 2469,
+      "modifiedAt": "2026-07-15T08:41:06.864Z",
+      "hash": "2005287dd662dcc75f272d5552cf57b597470d36"
+    },
+    "frontend/src/react-app-env.d.ts": {
+      "size": 41,
+      "modifiedAt": "2026-07-10T17:19:11.761Z",
+      "hash": "43aa86557e5459ff8ef4cbf3e626d6d11d25dd20"
+    },
+    "frontend/src/reportWebVitals.ts": {
+      "size": 425,
+      "modifiedAt": "2026-07-10T17:18:25.509Z",
+      "hash": "632fad2ec18dbf9c989885beaffab3bb2ace2c71"
+    },
+    "frontend/src/setupTests.ts": {
+      "size": 241,
+      "modifiedAt": "2026-07-10T17:18:26.027Z",
+      "hash": "c094c2f8aa68cd46c90f53284610e6b909a516f8"
+    },
+    "frontend/src/styles.d.ts": {
+      "size": 96,
+      "modifiedAt": "2026-07-12T05:47:51.593Z",
+      "hash": "0dfd41e3b9f458a658d226e0691f9bb3995df217"
+    },
+    "frontend/tailwind.config.js": {
+      "size": 733,
+      "modifiedAt": "2026-07-12T07:04:21.987Z",
+      "hash": "21ac7f6b754dd1abe9bc3e6a17b067168552af13"
+    },
+    "frontend/tsconfig.json": {
+      "size": 563,
+      "modifiedAt": "2026-07-12T05:47:48.494Z",
+      "hash": "d4ff4914492c1d81c1dacde92c90e0ea0651e124"
+    },
+    "package-lock.json": {
+      "size": 9345,
+      "modifiedAt": "2026-07-12T05:52:43.724Z",
+      "hash": "59576b64c59f9f4458f9958c50b22f5cf9b2828c"
+    },
+    "package.json": {
+      "size": 494,
+      "modifiedAt": "2026-07-15T08:51:01.494Z",
+      "hash": "ed46ae5996ac7c617d288bbeaf6c2d1e9dc1ed68"
+    },
+    "scripts/docs-watch.js": {
+      "size": 1867,
+      "modifiedAt": "2026-07-15T09:05:00.346Z",
+      "hash": "fdd5b623ba09ad51aeb0e94c051a1ae200f0dad4"
+    },
+    "scripts/generate-docs.js": {
+      "size": 17681,
+      "modifiedAt": "2026-07-15T08:51:01.494Z",
+      "hash": "e2844667b2d4f7bcfae1d2a5e4251c3ec1871353"
+    }
+  }
+}
