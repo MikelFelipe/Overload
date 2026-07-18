@@ -1,0 +1,48 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.createSession = exports.deleteSplit = exports.setActiveSplit = exports.updateSplit = exports.createSplit = exports.listDashboard = void 0;
+const crypto_1 = require("crypto");
+const supabase_1 = require("../config/supabase");
+const gyms = [
+    { id: 'gym-1', name: 'PowerHouse Fitness', location: 'Lipa City, Batangas', status: 'Open', hours: '6:00 AM – 10:00 PM', distanceKm: 1.2 },
+    { id: 'gym-2', name: 'Iron Temple Gym', location: 'P. Torres St, Lipa City', status: 'Closed', hours: '5:00 AM – 9:00 PM', distanceKm: 2.5 },
+    { id: 'gym-3', name: 'Anytime Fitness', location: 'J.P. Laurel Hwy, Lipa City', status: 'Open', hours: '24 Hours', distanceKm: 3.1 },
+];
+const now = () => new Date().toISOString();
+const fail = (message) => { throw new Error(message); };
+const dbError = (error) => { if (error)
+    throw new Error(error.message); };
+const toSplit = (row) => ({ id: row.id, userId: row.user_id, name: row.name, color: row.color, exercises: row.exercises, isActive: row.is_active, createdAt: row.created_at, updatedAt: row.updated_at });
+const toSession = (row) => ({ id: row.id, userId: row.user_id, splitId: row.split_id, date: row.date, time: row.time, exercises: row.exercises, createdAt: row.created_at });
+const splitRow = (split) => ({ id: split.id, user_id: split.userId, name: split.name, color: split.color, exercises: split.exercises, is_active: split.isActive, created_at: split.createdAt, updated_at: split.updatedAt });
+const validateSplit = (input) => { const name = typeof input.name === 'string' ? input.name.trim() : ''; if (!name)
+    fail('A split name is required.'); if (!/^#[0-9a-fA-F]{6}$/.test(String(input.color)))
+    fail('A valid split color is required.'); if (!Array.isArray(input.exercises) || !input.exercises.length)
+    fail('Add at least one exercise.'); const exercises = input.exercises.map((entry) => { const exerciseName = typeof entry?.name === 'string' ? entry.name.trim() : ''; const targetSets = Number(entry?.targetSets); const targetReps = Number(entry?.targetReps); if (!exerciseName || !Number.isInteger(targetSets) || targetSets < 1 || !Number.isInteger(targetReps) || targetReps < 1)
+    fail('Each exercise needs a name, sets, and reps.'); return { id: typeof entry.id === 'string' && entry.id ? entry.id : `exercise_${(0, crypto_1.randomUUID)()}`, name: exerciseName, targetSets, targetReps }; }); return { name, color: String(input.color), exercises, isActive: Boolean(input.isActive) }; };
+const findSplit = async (userId, splitId) => { const { data, error } = await (0, supabase_1.getSupabase)().from('workout_splits').select('*').eq('id', splitId).eq('user_id', userId).maybeSingle(); dbError(error); if (!data)
+    fail('Workout split not found.'); return toSplit(data); };
+const deactivateOtherSplits = async (userId, excludeId) => { const { error } = await (0, supabase_1.getSupabase)().from('workout_splits').update({ is_active: false, updated_at: now() }).eq('user_id', userId).neq('id', excludeId).eq('is_active', true); dbError(error); };
+const listDashboard = async (userId) => { const db = (0, supabase_1.getSupabase)(); const [{ data: splitRows, error: splitError }, { data: sessionRows, error: sessionError }] = await Promise.all([db.from('workout_splits').select('*').eq('user_id', userId).order('created_at', { ascending: false }), db.from('session_logs').select('*').eq('user_id', userId).order('created_at', { ascending: false })]); dbError(splitError); dbError(sessionError); return { splits: (splitRows || []).map(toSplit), sessions: (sessionRows || []).map(toSession), gyms }; };
+exports.listDashboard = listDashboard;
+const createSplit = async (userId, input) => { const db = (0, supabase_1.getSupabase)(); const data = validateSplit(input); const { count, error: countError } = await db.from('workout_splits').select('*', { count: 'exact', head: true }).eq('user_id', userId); dbError(countError); const timestamp = now(); const split = { id: `split_${(0, crypto_1.randomUUID)()}`, userId, ...data, isActive: data.isActive || !count, createdAt: timestamp, updatedAt: timestamp }; if (split.isActive)
+    await deactivateOtherSplits(userId, split.id); const { error } = await db.from('workout_splits').insert(splitRow(split)); if (error?.code === '23505')
+    fail('A split with that name already exists.'); dbError(error); return split; };
+exports.createSplit = createSplit;
+const updateSplit = async (userId, splitId, input) => { const db = (0, supabase_1.getSupabase)(); const current = await findSplit(userId, splitId); const data = validateSplit(input); if (data.isActive)
+    await deactivateOtherSplits(userId, splitId); const split = { ...current, ...data, updatedAt: now() }; const { error } = await db.from('workout_splits').update(splitRow(split)).eq('id', splitId).eq('user_id', userId); if (error?.code === '23505')
+    fail('A split with that name already exists.'); dbError(error); return split; };
+exports.updateSplit = updateSplit;
+const setActiveSplit = async (userId, splitId) => { const db = (0, supabase_1.getSupabase)(); const split = await findSplit(userId, splitId); await deactivateOtherSplits(userId, splitId); const active = { ...split, isActive: true, updatedAt: now() }; dbError((await db.from('workout_splits').update(splitRow(active)).eq('id', splitId).eq('user_id', userId)).error); return active; };
+exports.setActiveSplit = setActiveSplit;
+const deleteSplit = async (userId, splitId) => { const db = (0, supabase_1.getSupabase)(); const split = await findSplit(userId, splitId); dbError((await db.from('workout_splits').delete().eq('id', splitId).eq('user_id', userId)).error); if (split.isActive) {
+    const { data, error } = await db.from('workout_splits').select('id').eq('user_id', userId).order('created_at').limit(1);
+    dbError(error);
+    if (data?.[0])
+        await (0, exports.setActiveSplit)(userId, data[0].id);
+} };
+exports.deleteSplit = deleteSplit;
+const createSession = async (userId, input) => { const db = (0, supabase_1.getSupabase)(); const splitId = typeof input?.splitId === 'string' ? input.splitId : ''; const date = typeof input?.date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(input.date) ? input.date : fail('A valid workout date is required.'); const split = await findSplit(userId, splitId); if (!Array.isArray(input?.exercises) || !input.exercises.length)
+    fail('Add at least one exercise result.'); const { data: priorRows, error: priorError } = await db.from('session_logs').select('*').eq('user_id', userId).eq('split_id', splitId).order('created_at', { ascending: false }).limit(1); dbError(priorError); const prior = priorRows?.[0] ? toSession(priorRows[0]) : undefined; const exercises = input.exercises.map((entry) => { const matchedExercise = split.exercises.find((candidate) => candidate.id === entry?.exerciseId); const weight = Number(entry?.weight); const reps = Number(entry?.reps); if (!matchedExercise || !Number.isFinite(weight) || weight < 0 || !Number.isInteger(reps) || reps < 0)
+    fail('Each workout result must have valid weight and reps.'); const exercise = matchedExercise; const previous = prior?.exercises.find((candidate) => candidate.exerciseId === exercise.id); return { exerciseId: exercise.id, name: exercise.name, weight, weightUnit: entry?.weightUnit === 'lb' ? 'lb' : 'kg', reps, weightDelta: weight - (previous?.weight ?? 0), repsDelta: reps - (previous?.reps ?? 0) }; }); const session = { id: `session_${(0, crypto_1.randomUUID)()}`, userId, splitId, date, time: new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }), exercises, createdAt: now() }; dbError((await db.from('session_logs').insert({ id: session.id, user_id: session.userId, split_id: session.splitId, date: session.date, time: session.time, exercises: session.exercises, created_at: session.createdAt })).error); return session; };
+exports.createSession = createSession;

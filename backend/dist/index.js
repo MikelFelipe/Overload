@@ -8,9 +8,14 @@ const cors_1 = __importDefault(require("cors"));
 const helmet_1 = __importDefault(require("helmet"));
 const cookie_parser_1 = __importDefault(require("cookie-parser"));
 const dotenv_1 = __importDefault(require("dotenv"));
-const cosmos_1 = require("./config/cosmos");
+const path_1 = require("path");
+const supabase_1 = require("./config/supabase");
 const auth_routes_1 = __importDefault(require("./routes/auth.routes"));
-dotenv_1.default.config();
+const workout_routes_1 = __importDefault(require("./routes/workout.routes"));
+// Prefer a backend-specific environment file, while supporting the repository
+// root `.env` for the existing development setup.
+dotenv_1.default.config({ path: (0, path_1.resolve)(process.cwd(), '.env') });
+dotenv_1.default.config({ path: (0, path_1.resolve)(process.cwd(), '..', '.env') });
 const app = (0, express_1.default)();
 const PORT = process.env.PORT || 5000;
 // Middleware
@@ -24,8 +29,9 @@ app.get('/api/health', (req, res) => {
 });
 // Auth routes
 app.use('/api/auth', auth_routes_1.default);
-// Initialize Cosmos DB then start the server
-(0, cosmos_1.initDatabase)().then(() => {
+app.use('/api/workouts', workout_routes_1.default);
+// Verify Supabase connectivity then start the server.
+(0, supabase_1.initDatabase)().then(() => {
     app.listen(PORT, () => {
         console.log(`🚀 Backend running on http://localhost:${PORT}`);
     });

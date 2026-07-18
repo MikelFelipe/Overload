@@ -1,23 +1,16 @@
 "use strict";
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.authenticate = void 0;
-const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
-const JWT_SECRET = process.env.JWT_SECRET;
-const authenticate = (req, res, next) => {
+const supabase_1 = require("../config/supabase");
+const authenticate = async (req, res, next) => {
     const token = req.cookies?.session;
     if (!token)
         return res.status(401).json({ error: 'Unauthorized' });
-    try {
-        const decoded = jsonwebtoken_1.default.verify(token, JWT_SECRET);
-        req.userId = decoded.userId;
-        req.user = decoded;
-        return next();
-    }
-    catch {
+    const { data, error } = await (0, supabase_1.getSupabase)().auth.getUser(token);
+    if (error || !data.user)
         return res.status(401).json({ error: 'Unauthorized' });
-    }
+    req.userId = data.user.id;
+    req.user = data.user;
+    return next();
 };
 exports.authenticate = authenticate;

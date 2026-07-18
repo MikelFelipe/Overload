@@ -31,7 +31,7 @@
       "modifiedAt": "2026-07-15T09:09:50.006Z",
       "hash": "e09233fb034a5a371699fbc4f1c0ea3bb2f927e0"
     },
-    "backend/src/config/cosmos.ts": {
+    "backend/src/config/supabase.ts": {
       "size": 2073,
       "modifiedAt": "2026-07-15T08:18:11.682Z",
       "hash": "86875763b130575c09e4c3d10b14c4507a54c165"

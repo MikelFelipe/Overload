@@ -1,11 +1,9 @@
 import { createHash, randomBytes, randomInt, randomUUID } from 'crypto';
-import jwt from 'jsonwebtoken';
 import nodemailer from 'nodemailer';
-import { authChallengesContainer, pendingRegistrationsContainer, usersContainer } from '../config/cosmos';
-import { PendingRegistration, User } from '../models/user.model';
-import { hashPassword, verifyPassword } from '../utils/hash';
+import '../config/env';
+import { getSupabase } from '../config/supabase';
+import { PendingRegistration, UserProfile } from '../models/user.model';
 
-const JWT_SECRET = process.env.JWT_SECRET!;
 const EMAIL_FROM = process.env.EMAIL_FROM || 'no-reply@overload.app';
 const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:3000';
 const SMTP_HOST = process.env.SMTP_HOST;
@@ -13,181 +11,31 @@ const SMTP_PORT = Number(process.env.SMTP_PORT || 587);
 const SMTP_USER = process.env.SMTP_USER;
 const SMTP_PASS = process.env.SMTP_PASS;
 const hasSmtpConfiguration = Boolean(SMTP_HOST && SMTP_USER && SMTP_PASS);
-const FIFTEEN_MINUTES = 15 * 60;
-
-const transporter = nodemailer.createTransport(hasSmtpConfiguration
-  ? { host: SMTP_HOST, port: SMTP_PORT, secure: SMTP_PORT === 465, auth: { user: SMTP_USER, pass: SMTP_PASS } }
-  : { jsonTransport: true } as any);
-
+const FIFTEEN_MINUTES = 15 * 60 * 1000;
+const transporter = nodemailer.createTransport(hasSmtpConfiguration ? { host: SMTP_HOST, port: SMTP_PORT, secure: SMTP_PORT === 465, auth: { user: SMTP_USER, pass: SMTP_PASS } } : { jsonTransport: true } as any);
 const now = () => new Date();
 const expiresIn = (milliseconds: number) => new Date(Date.now() + milliseconds).toISOString();
 const isExpired = (value?: string) => Boolean(value && new Date(value) < now());
 const digest = (value: string) => createHash('sha256').update(value).digest('hex');
 const normalizeEmail = (email: string) => email.trim().toLowerCase();
 const clientKey = (email: string, ip: string) => `${normalizeEmail(email)}:${ip}`;
-
-const queryOne = async <T>(container: typeof usersContainer, query: string, parameters: { name: string; value: string }[]) => {
-  const { resources } = await container.items.query<T>({ query, parameters }).fetchAll();
-  return resources[0];
-};
-
-const validateRegistration = (data: RegisterData) => {
-  const errors: Record<string, string> = {};
-  if (!data.firstName.trim()) errors.firstName = 'First name is required.';
-  if (!data.lastName.trim()) errors.lastName = 'Last name is required.';
-  if (!/^\S+@\S+\.\S+$/.test(data.email.trim())) errors.email = 'Enter a valid email address.';
-  if (!/^[+()\d\s-]{7,25}$/.test(data.phoneNumber.trim())) errors.phoneNumber = 'Enter a valid phone number.';
-  if (data.password.length < 8) errors.password = 'Password must be at least 8 characters.';
-  else if (!/[A-Z]/.test(data.password) || !/[a-z]/.test(data.password) || !/\d/.test(data.password) || !/[^A-Za-z0-9]/.test(data.password)) {
-    errors.password = 'Password needs uppercase, lowercase, number, and special character.';
-  }
-  if (Object.keys(errors).length) throw new ValidationError(errors);
-};
-
-const sendMail = async (to: string, subject: string, html: string, devUrl?: string) => {
-  const mailOptions = { from: EMAIL_FROM, to, subject, html };
-  const info = await transporter.sendMail(mailOptions);
-  if (!hasSmtpConfiguration) console.log('Development email:', devUrl || info.messageId);
-};
-
-const sendVerificationEmail = async (pending: PendingRegistration, rawToken: string) => {
-  const url = `${FRONTEND_URL}/verify?token=${encodeURIComponent(rawToken)}`;
-  await sendMail(pending.email, 'Verify your Overload account', `<p>Hi ${pending.firstName},</p><p><a href="${url}">Verify your email</a></p><p>This link expires in 24 hours.</p>`, url);
-};
-
-const sendOtpEmail = async (email: string, code: string) => {
-  await sendMail(email, 'Your Overload sign-in code', `<p>Your sign-in code is <strong>${code}</strong>.</p><p>It expires in 5 minutes.</p>`);
-};
-
-const recordAttempt = async (kind: string, email: string, ip: string, limit: number) => {
-  const key = clientKey(email, ip);
-  const { resources } = await authChallengesContainer.items.query<{ id: string }>({
-    query: 'SELECT c.id FROM c WHERE c.docType = @kind AND c.key = @key',
-    parameters: [{ name: '@kind', value: `rate:${kind}` }, { name: '@key', value: key }],
-  }).fetchAll();
-  if (resources.length >= limit) throw new Error('Too many requests. Please try again later.');
-  await authChallengesContainer.items.create({ id: `rate_${randomUUID()}`, partitionKey: key, key, docType: `rate:${kind}`, ttl: FIFTEEN_MINUTES, createdAt: now().toISOString() });
-};
+const dbError = (error: { message: string } | null) => { if (error) throw new Error(error.message); };
+const toPending = (row: any): PendingRegistration => ({ id: row.id, email: row.email, firstName: row.first_name, lastName: row.last_name, middleName: row.middle_name || undefined, phoneNumber: row.phone_number, verificationTokenHash: row.verification_token_hash, verificationTokenExpiresAt: row.verification_token_expires_at, resendAvailableAt: row.resend_available_at, createdAt: row.created_at });
+const toProfile = (row: any): UserProfile => ({ id: row.id, email: row.email, name: row.name, firstName: row.first_name, lastName: row.last_name, middleName: row.middle_name || undefined, phoneNumber: row.phone_number, unitPreference: row.unit_preference, createdAt: row.created_at, updatedAt: row.updated_at, lastLoginDate: row.last_login_date || undefined });
+const sendMail = async (to: string, subject: string, html: string, devUrl?: string) => { const info = await transporter.sendMail({ from: EMAIL_FROM, to, subject, html }); if (!hasSmtpConfiguration) console.log('Development email:', devUrl || info.messageId); };
+const sendVerificationEmail = async (pending: PendingRegistration, token: string) => sendMail(pending.email, 'Verify your Overload account', `<p>Hi ${pending.firstName},</p><p><a href="${FRONTEND_URL}/verify?token=${encodeURIComponent(token)}">Verify your email</a></p><p>This link expires in 24 hours.</p>`);
+const sendOtpEmail = async (email: string, code: string) => sendMail(email, 'Your Overload sign-in code', `<p>Your sign-in code is <strong>${code}</strong>.</p><p>It expires in 5 minutes.</p>`);
+const recordAttempt = async (email: string, ip: string, limit: number) => { const db = getSupabase(); const key = clientKey(email, ip); const cutoff = new Date(Date.now() - FIFTEEN_MINUTES).toISOString(); await db.from('auth_challenges').delete().eq('kind', 'rate').lt('expires_at', now().toISOString()); const { count, error } = await db.from('auth_challenges').select('*', { count: 'exact', head: true }).eq('kind', 'rate').eq('rate_key', key).gte('created_at', cutoff); dbError(error); if ((count || 0) >= limit) throw new Error('Too many requests. Please try again later.'); dbError((await db.from('auth_challenges').insert({ id: `rate_${randomUUID()}`, kind: 'rate', rate_key: key, expires_at: expiresIn(FIFTEEN_MINUTES) })).error); };
 
 interface RegisterData { firstName: string; lastName: string; middleName?: string; email: string; phoneNumber: string; password: string; }
+export class ValidationError extends Error { constructor(public readonly fields: Record<string, string>) { super('Validation failed'); } }
+const validateRegistration = (data: RegisterData) => { const errors: Record<string, string> = {}; if (!data.firstName?.trim()) errors.firstName = 'First name is required.'; if (!data.lastName?.trim()) errors.lastName = 'Last name is required.'; if (!/^\S+@\S+\.\S+$/.test(data.email?.trim() || '')) errors.email = 'Enter a valid email address.'; if (!/^[+()\d\s-]{7,25}$/.test(data.phoneNumber?.trim() || '')) errors.phoneNumber = 'Enter a valid phone number.'; if ((data.password || '').length < 8) errors.password = 'Password must be at least 8 characters.'; else if (!/[A-Z]/.test(data.password) || !/[a-z]/.test(data.password) || !/\d/.test(data.password) || !/[^A-Za-z0-9]/.test(data.password)) errors.password = 'Password needs uppercase, lowercase, number, and special character.'; if (Object.keys(errors).length) throw new ValidationError(errors); };
 
-export class ValidationError extends Error {
-  constructor(public readonly fields: Record<string, string>) { super('Validation failed'); }
-}
-
-export const registerUser = async (data: RegisterData, ip: string) => {
-  validateRegistration(data);
-  const email = normalizeEmail(data.email);
-  await recordAttempt('register', email, ip, 5);
-  const existingUser = await queryOne<User>(usersContainer, 'SELECT * FROM c WHERE c.email = @email', [{ name: '@email', value: email }]);
-  if (existingUser) throw new Error('An account with this email already exists.');
-  const existingPending = await queryOne<PendingRegistration>(pendingRegistrationsContainer, 'SELECT * FROM c WHERE c.email = @email', [{ name: '@email', value: email }]);
-  if (existingPending && !isExpired(existingPending.verificationTokenExpiresAt)) throw new Error('A verification email was already sent. Please check your inbox or resend it.');
-  if (existingPending) await pendingRegistrationsContainer.item(existingPending.id, existingPending.partitionKey).delete().catch(() => undefined);
-  const token = randomBytes(32).toString('hex');
-  const createdAt = now().toISOString();
-  const pending: PendingRegistration = {
-    id: `pending_${randomUUID()}`, partitionKey: email, email, firstName: data.firstName.trim(), lastName: data.lastName.trim(), middleName: data.middleName?.trim() || undefined,
-    phoneNumber: data.phoneNumber.trim(), passwordHash: await hashPassword(data.password), verificationTokenHash: digest(token), verificationTokenExpiresAt: expiresIn(24 * 60 * 60 * 1000),
-    resendAvailableAt: expiresIn(60 * 1000), createdAt, ttl: 24 * 60 * 60,
-  };
-  await pendingRegistrationsContainer.items.create(pending);
-  await sendVerificationEmail(pending, token);
-};
-
-export const resendVerification = async (emailValue: string, ip: string) => {
-  const email = normalizeEmail(emailValue);
-  await recordAttempt('verification-resend', email, ip, 3);
-  const pending = await queryOne<PendingRegistration>(pendingRegistrationsContainer, 'SELECT * FROM c WHERE c.email = @email', [{ name: '@email', value: email }]);
-  if (!pending) return;
-  if (isExpired(pending.verificationTokenExpiresAt)) {
-    await pendingRegistrationsContainer.item(pending.id, pending.partitionKey).delete().catch(() => undefined);
-    return;
-  }
-  if (new Date(pending.resendAvailableAt) > now()) throw new Error('Please wait before requesting another verification email.');
-  const token = randomBytes(32).toString('hex');
-  pending.verificationTokenHash = digest(token);
-  pending.verificationTokenExpiresAt = expiresIn(24 * 60 * 60 * 1000);
-  pending.resendAvailableAt = expiresIn(60 * 1000);
-  await pendingRegistrationsContainer.item(pending.id, pending.partitionKey).replace(pending);
-  await sendVerificationEmail(pending, token);
-};
-
-export const verifyUser = async (token: string) => {
-  const pending = await queryOne<PendingRegistration>(pendingRegistrationsContainer, 'SELECT * FROM c WHERE c.verificationTokenHash = @token', [{ name: '@token', value: digest(token) }]);
-  if (!pending || isExpired(pending.verificationTokenExpiresAt)) {
-    if (pending) await pendingRegistrationsContainer.item(pending.id, pending.partitionKey).delete().catch(() => undefined);
-    throw new Error('This verification link is invalid or has expired.');
-  }
-  const userId = `user_${randomUUID()}`;
-  const timestamp = now().toISOString();
-  const user: User = { id: userId, userId, email: pending.email, name: `${pending.firstName} ${pending.lastName}`, firstName: pending.firstName, lastName: pending.lastName, middleName: pending.middleName,
-    phoneNumber: pending.phoneNumber, passwordHash: pending.passwordHash, unitPreference: 'kg', createdAt: timestamp, updatedAt: timestamp, emailVerified: true, failedLoginCount: 0 };
-  await usersContainer.items.create(user);
-  await pendingRegistrationsContainer.item(pending.id, pending.partitionKey).delete();
-  return user;
-};
-
-export const loginUser = async (emailValue: string, password: string, ip: string) => {
-  const email = normalizeEmail(emailValue);
-  await recordAttempt('login', email, ip, 10);
-  const user = await queryOne<User>(usersContainer, 'SELECT * FROM c WHERE c.email = @email', [{ name: '@email', value: email }]);
-  const invalid = new Error('Invalid email or password.');
-  if (user && user.lockoutExpiresAt && !isExpired(user.lockoutExpiresAt)) {
-    throw new Error('Account is temporarily locked. Please try again later.');
-  }
-  if (user && user.lockoutExpiresAt && isExpired(user.lockoutExpiresAt)) {
-    user.lockoutExpiresAt = undefined;
-    user.failedLoginCount = 0;
-    user.updatedAt = now().toISOString();
-    await usersContainer.item(user.id, user.userId).replace(user);
-  }
-  if (!user || !await verifyPassword(password, user.passwordHash)) {
-    if (user) {
-      user.failedLoginCount += 1;
-      if (user.failedLoginCount >= 5) user.lockoutExpiresAt = expiresIn(15 * 60 * 1000);
-      user.updatedAt = now().toISOString();
-      await usersContainer.item(user.id, user.userId).replace(user);
-    }
-    throw invalid;
-  }
-  const code = String(randomInt(0, 1_000_000)).padStart(6, '0');
-  const challengeId = `otp_${randomUUID()}`;
-  await authChallengesContainer.items.create({ id: challengeId, partitionKey: email, docType: 'otp', email, codeHash: digest(code), attempts: 0, used: false, resendAvailableAt: expiresIn(60 * 1000), createdAt: now().toISOString(), ttl: 5 * 60 });
-  await sendOtpEmail(email, code);
-  return { challengeId };
-};
-
-export const verifyOtp = async (challengeId: string, code: string) => {
-  const challenge = await queryOne<any>(authChallengesContainer, 'SELECT * FROM c WHERE c.id = @id AND c.docType = @type', [{ name: '@id', value: challengeId }, { name: '@type', value: 'otp' }]);
-  if (!challenge || challenge.used || challenge.codeHash !== digest(code)) {
-    if (challenge && !challenge.used) { challenge.attempts += 1; if (challenge.attempts >= 5) challenge.used = true; await authChallengesContainer.item(challenge.id, challenge.partitionKey).replace(challenge); }
-    throw new Error('Invalid or expired verification code.');
-  }
-  challenge.used = true;
-  await authChallengesContainer.item(challenge.id, challenge.partitionKey).replace(challenge);
-  const user = await queryOne<User>(usersContainer, 'SELECT * FROM c WHERE c.email = @email', [{ name: '@email', value: challenge.email }]);
-  if (!user) throw new Error('Invalid or expired verification code.');
-  user.failedLoginCount = 0; user.lockoutExpiresAt = undefined; user.lastLoginDate = now().toISOString(); user.updatedAt = user.lastLoginDate;
-  await usersContainer.item(user.id, user.userId).replace(user);
-  return { token: jwt.sign({ userId: user.userId }, JWT_SECRET, { expiresIn: '7d' }), user: { userId: user.userId, name: user.name, email: user.email, unitPreference: user.unitPreference } };
-};
-
-export const resendOtp = async (challengeId: string, ip: string) => {
-  const challenge = await queryOne<any>(authChallengesContainer, 'SELECT * FROM c WHERE c.id = @id AND c.docType = @type', [{ name: '@id', value: challengeId }, { name: '@type', value: 'otp' }]);
-  if (!challenge || challenge.used || new Date(challenge.resendAvailableAt) > now()) throw new Error('Please wait before requesting another code.');
-  await recordAttempt('otp-resend', challenge.email, ip, 3);
-  challenge.used = true;
-  await authChallengesContainer.item(challenge.id, challenge.partitionKey).replace(challenge);
-  const code = String(randomInt(0, 1_000_000)).padStart(6, '0');
-  const nextId = `otp_${randomUUID()}`;
-  await authChallengesContainer.items.create({ ...challenge, id: nextId, codeHash: digest(code), attempts: 0, used: false, resendAvailableAt: expiresIn(60 * 1000), createdAt: now().toISOString(), ttl: 5 * 60 });
-  await sendOtpEmail(challenge.email, code);
-  return { challengeId: nextId };
-};
-
-export const getSessionUser = async (userId: string) => {
-  const user = await queryOne<User>(usersContainer, 'SELECT * FROM c WHERE c.userId = @userId', [{ name: '@userId', value: userId }]);
-  if (!user) return undefined;
-  return { userId: user.userId, name: user.name, email: user.email, unitPreference: user.unitPreference };
-};
+export const registerUser = async (data: RegisterData, ip: string) => { validateRegistration(data); const db = getSupabase(); const email = normalizeEmail(data.email); await recordAttempt(email, ip, 5); const { data: existing } = await db.auth.admin.listUsers({ page: 1, perPage: 1000 }); if (existing.users.some((user) => user.email?.toLowerCase() === email)) throw new Error('An account with this email already exists.'); const { data: authData, error: authError } = await db.auth.admin.createUser({ email, password: data.password, email_confirm: false }); dbError(authError); if (!authData.user) throw new Error('Supabase did not create the account.'); const authUser = authData.user; const token = randomBytes(32).toString('hex'); const pending: PendingRegistration = { id: authUser.id, email, firstName: data.firstName.trim(), lastName: data.lastName.trim(), middleName: data.middleName?.trim() || undefined, phoneNumber: data.phoneNumber.trim(), verificationTokenHash: digest(token), verificationTokenExpiresAt: expiresIn(86400000), resendAvailableAt: expiresIn(60000), createdAt: now().toISOString() }; const { error } = await db.from('pending_registrations').insert({ id: pending.id, email: pending.email, first_name: pending.firstName, last_name: pending.lastName, middle_name: pending.middleName || null, phone_number: pending.phoneNumber, verification_token_hash: pending.verificationTokenHash, verification_token_expires_at: pending.verificationTokenExpiresAt, resend_available_at: pending.resendAvailableAt, created_at: pending.createdAt }); if (error) { await db.auth.admin.deleteUser(authUser.id); dbError(error); } await sendVerificationEmail(pending, token); };
+export const resendVerification = async (emailValue: string, ip: string) => { const db = getSupabase(); const email = normalizeEmail(emailValue); await recordAttempt(email, ip, 3); const { data, error } = await db.from('pending_registrations').select('*').eq('email', email).maybeSingle(); dbError(error); if (!data) return; const pending = toPending(data); if (isExpired(pending.verificationTokenExpiresAt)) { await db.auth.admin.deleteUser(pending.id); dbError((await db.from('pending_registrations').delete().eq('id', pending.id)).error); return; } if (new Date(pending.resendAvailableAt) > now()) throw new Error('Please wait before requesting another verification email.'); const token = randomBytes(32).toString('hex'); dbError((await db.from('pending_registrations').update({ verification_token_hash: digest(token), verification_token_expires_at: expiresIn(86400000), resend_available_at: expiresIn(60000) }).eq('id', pending.id)).error); await sendVerificationEmail(pending, token); };
+export const verifyUser = async (token: string) => { const db = getSupabase(); const { data, error } = await db.from('pending_registrations').select('*').eq('verification_token_hash', digest(token)).maybeSingle(); dbError(error); if (!data) throw new Error('This verification link is invalid or has expired.'); const pending = toPending(data); if (isExpired(pending.verificationTokenExpiresAt)) { await db.auth.admin.deleteUser(pending.id); await db.from('pending_registrations').delete().eq('id', pending.id); throw new Error('This verification link is invalid or has expired.'); } dbError((await db.auth.admin.updateUserById(pending.id, { email_confirm: true })).error); dbError((await db.from('profiles').insert({ id: pending.id, email: pending.email, name: `${pending.firstName} ${pending.lastName}`, first_name: pending.firstName, last_name: pending.lastName, middle_name: pending.middleName || null, phone_number: pending.phoneNumber })).error); dbError((await db.from('pending_registrations').delete().eq('id', pending.id)).error); };
+export const loginUser = async (emailValue: string, password: string, ip: string) => { const db = getSupabase(); const email = normalizeEmail(emailValue); await recordAttempt(email, ip, 10); const { data, error } = await db.auth.signInWithPassword({ email, password }); if (error || !data.session || !data.user) throw new Error('Invalid email or password.'); const code = String(randomInt(0, 1000000)).padStart(6, '0'); const challengeId = `otp_${randomUUID()}`; dbError((await db.from('auth_challenges').insert({ id: challengeId, kind: 'otp', email, code_hash: digest(code), attempts: 0, used: false, resend_available_at: expiresIn(60000), expires_at: expiresIn(300000), access_token: data.session.access_token })).error); await sendOtpEmail(email, code); return { challengeId }; };
+const findChallenge = async (id: string) => { const { data, error } = await getSupabase().from('auth_challenges').select('*').eq('id', id).eq('kind', 'otp').maybeSingle(); dbError(error); return data; };
+export const verifyOtp = async (challengeId: string, code: string) => { const db = getSupabase(); const challenge = await findChallenge(challengeId); if (!challenge || challenge.used || isExpired(challenge.expires_at) || challenge.code_hash !== digest(code)) { if (challenge && !challenge.used) await db.from('auth_challenges').update({ attempts: challenge.attempts + 1, used: challenge.attempts + 1 >= 5 }).eq('id', challenge.id); throw new Error('Invalid or expired verification code.'); } dbError((await db.from('auth_challenges').update({ used: true }).eq('id', challenge.id)).error); const { data: authData, error: authError } = await db.auth.getUser(challenge.access_token); if (authError || !authData.user) throw new Error('Your sign-in session expired. Please log in again.'); const { data, error } = await db.from('profiles').select('*').eq('id', authData.user.id).maybeSingle(); dbError(error); if (!data) throw new Error('Account profile not found.'); dbError((await db.from('profiles').update({ last_login_date: now().toISOString() }).eq('id', authData.user.id)).error); const user = toProfile(data); return { token: challenge.access_token, user: { userId: user.id, name: user.name, email: user.email, unitPreference: user.unitPreference } }; };
+export const resendOtp = async (challengeId: string, ip: string) => { const db = getSupabase(); const challenge = await findChallenge(challengeId); if (!challenge || challenge.used || isExpired(challenge.expires_at) || new Date(challenge.resend_available_at) > now()) throw new Error('Please wait before requesting another code.'); await recordAttempt(challenge.email, ip, 3); dbError((await db.from('auth_challenges').update({ used: true }).eq('id', challenge.id)).error); const code = String(randomInt(0, 1000000)).padStart(6, '0'); const nextId = `otp_${randomUUID()}`; dbError((await db.from('auth_challenges').insert({ id: nextId, kind: 'otp', email: challenge.email, code_hash: digest(code), attempts: 0, used: false, resend_available_at: expiresIn(60000), expires_at: expiresIn(300000), access_token: challenge.access_token })).error); await sendOtpEmail(challenge.email, code); return { challengeId: nextId }; };
+export const getSessionUser = async (userId: string) => { const { data, error } = await getSupabase().from('profiles').select('*').eq('id', userId).maybeSingle(); dbError(error); if (!data) return undefined; const user = toProfile(data); return { userId: user.id, name: user.name, email: user.email, unitPreference: user.unitPreference }; };

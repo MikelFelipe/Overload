@@ -105,7 +105,7 @@ function buildArchitectureDiagram() {
     'flowchart TD',
     '  U[User] --> FE[React Frontend]',
     '  FE --> BE[Express Backend]',
-    '  BE --> DB[(Azure Cosmos DB)]',
+    '  BE --> DB[(Supabase PostgreSQL)]',
     '  BE --> SMTP[SMTP / Email Service]',
     '  FE --> Auth[Auth Pages & Context]',
     '  BE --> JWT[JWT Session Cookie]',
@@ -120,7 +120,7 @@ function buildAuthDiagram() {
     '  actor User',
     '  participant FE as Frontend',
     '  participant BE as Backend',
-    '  participant DB as Cosmos DB',
+    '  participant DB as Supabase PostgreSQL',
     '  participant Mail as SMTP',
     '  User->>FE: Register / Login',
     '  FE->>BE: Submit credentials',
@@ -209,8 +209,8 @@ function buildChangeLog(previousState, currentState) {
 
 function inferKnownIssues(files) {
   const issues = [];
-  if (files.includes('backend/src/config/cosmos.ts')) {
-    issues.push('Cosmos DB requires a configured emulator or cloud endpoint and credentials before backend startup.');
+  if (files.includes('backend/src/config/supabase.ts')) {
+    issues.push('Supabase requires a configured project URL and backend service role key before startup.');
   }
   if (files.includes('frontend/src/pages/Dashboard.tsx')) {
     issues.push('The dashboard currently contains placeholder cards for an active split and nearby gyms.');
@@ -255,7 +255,7 @@ function buildDocumentation(files, currentState, previousState) {
 
 ## Project Overview
 
-Overload is a full-stack authentication-focused web app with a React frontend and an Express backend backed by Azure Cosmos DB. The current implementation provides account registration, email verification, OTP-based sign-in, and a protected dashboard shell.
+Overload is a full-stack authentication-focused web app with a React frontend and an Express backend backed by Supabase PostgreSQL and Supabase Auth. The current implementation provides account registration, email verification, OTP-based sign-in, and a protected dashboard shell.
 
 ## System Architecture
 
@@ -263,7 +263,7 @@ ${buildArchitectureDiagram()}
 
 ### Architecture Notes
 - The frontend is a React + TypeScript SPA that routes users through login, registration, verification, OTP, and dashboard screens.
-- The backend exposes auth routes and stores user data in Azure Cosmos DB while issuing JWT-backed session cookies.
+- The backend exposes auth routes and uses Supabase Auth with Supabase-backed application data.
 - Email delivery uses nodemailer with a development fallback to JSON transport when SMTP is not configured.
 
 ## Technology Stack
@@ -273,7 +273,7 @@ ${buildArchitectureDiagram()}
 - React 19 + TypeScript
 - React Router
 - Tailwind CSS
-- Azure Cosmos DB SDK
+- Supabase JavaScript client
 - Argon2 password hashing
 - Nodemailer and JWT
 
@@ -289,7 +289,7 @@ ${buildFolderTree(files)}
 
 ## Database Configuration and Schema
 
-The backend uses Azure Cosmos DB via the Cosmos client in [backend/src/config/cosmos.ts](backend/src/config/cosmos.ts). The configured database is expected to be available through the emulator or a reachable Azure account.
+The backend uses Supabase through [backend/src/config/supabase.ts](backend/src/config/supabase.ts). The configured project must be reachable with the backend service role key.
 
 ### Containers
 - Users: stores user account records, email verification flags, and lockout state.
@@ -311,7 +311,7 @@ ${buildAuthDiagram()}
 ### Current flow
 1. The user registers with first and last name, email, phone number, and password.
 2. A pending registration is created and a verification email is sent.
-3. The verification link activates the account and writes the verified user record to Cosmos DB.
+3. The verification link confirms the Supabase Auth account and writes its profile record to Supabase PostgreSQL.
 4. The user logs in with email and password, then completes OTP verification.
 5. A JWT is issued in an HTTP-only cookie for protected routes.
 
@@ -356,23 +356,22 @@ The route definitions are derived from [backend/src/routes/auth.routes.ts](backe
 
 - [backend/src/services/auth.service.ts](backend/src/services/auth.service.ts) exposes the registration, verification, login, OTP, and lockout logic. The implementation currently includes: ${authServiceSymbols.join(', ')}.
 - [backend/src/middleware/auth.middleware.ts](backend/src/middleware/auth.middleware.ts) validates the JWT session cookie.
-- [backend/src/config/cosmos.ts](backend/src/config/cosmos.ts) initializes the Cosmos DB containers used by the app.
+- [backend/src/config/supabase.ts](backend/src/config/supabase.ts) initializes the Supabase client used by the app.
 
 ## Environment Variables
 
 | Variable | Source | Notes |
 | --- | --- | --- |
 | PORT | [.env](.env) | Backend local development port |
-| COSMOS_ENDPOINT | [.env](.env) | Cosmos DB endpoint |
-| COSMOS_KEY | [.env](.env) | Cosmos DB access key |
-| COSMOS_DATABASE | [.env](.env) | Cosmos DB database name |
+| SUPABASE_URL | [.env](.env) | Supabase project URL |
+| SUPABASE_SERVICE_ROLE_KEY | [.env](.env) | Backend service role key |
 | JWT_SECRET | [.env](.env) | JWT signing secret |
 | GOOGLE_PLACES_API_KEY | [.env](.env) | Placeholder for future location integrations |
 | WGER_API_BASE | [.env](.env) | Placeholder for future WGER data integration |
 
 ## External Integrations
 
-- Azure Cosmos DB via the @azure/cosmos SDK
+- Supabase via the @supabase/supabase-js client
 - Nodemailer SMTP transport with development fallback
 - jsonwebtoken for signed session tokens
 - argon2 for password hashing
