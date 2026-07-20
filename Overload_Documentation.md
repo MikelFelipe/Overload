@@ -2,11 +2,11 @@
 
 ## Architecture
 
-Overload uses a React/TypeScript frontend and an Express/TypeScript API. The API is the only application component with the Supabase service-role key. The browser communicates with the API using an HTTP-only session cookie and may only use the Supabase anon key for future public client features.
+Overload uses one Expo Router/React Native TypeScript client for iOS, Android, and Web, plus an Express/TypeScript API. The API is the only application component with the Supabase service-role key. All clients communicate with the API using bearer access tokens stored through the platform-safe client storage adapter.
 
 ## Authentication
 
-Credentials are owned by Supabase Auth (`auth.users`); passwords are never stored in application tables. Registration creates an unconfirmed Supabase Auth user, then sends the application verification email. Verifying it confirms that Auth user and creates a matching `public.profiles` record. Login calls Supabase Auth `signInWithPassword`; the existing email OTP is a second step, after which its Supabase access token is stored in the HTTP-only cookie. Protected API routes validate that token with `auth.getUser`.
+Credentials are owned by Supabase Auth (`auth.users`); passwords are never stored in application tables. Registration creates an unconfirmed Supabase Auth user, then sends the application verification email. Verifying it confirms that Auth user and creates a matching `public.profiles` record. Login calls Supabase Auth `signInWithPassword`; email OTP is a second step, after which its Supabase access token is returned to the unified client. Protected API routes validate bearer tokens with `auth.getUser`.
 
 ## Schema
 
@@ -22,10 +22,9 @@ Backend (`backend/.env`, or repository-root `.env`):
 - `SUPABASE_SERVICE_ROLE_KEY` — backend only
 - `FRONTEND_URL`, `SMTP_*`, `EMAIL_FROM`
 
-Frontend (`frontend/.env`):
+Unified client (`mobile/.env` or Expo environment):
 
-- `VITE_SUPABASE_URL`
-- `VITE_SUPABASE_ANON_KEY`
+- `EXPO_PUBLIC_API_URL`
 
 Never expose, log, commit, or place `SUPABASE_SERVICE_ROLE_KEY` in client-side code.
 

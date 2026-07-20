@@ -1,0 +1,14 @@
+{
+  "expo": {
+    "name": "Overload",
+    "slug": "overload",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "scheme": "overload",
+    "userInterfaceStyle": "dark",
+    "plugins": ["expo-router"],
+    "web": { "bundler": "metro", "output": "static" },
+    "ios": { "supportsTablet": true },
+    "android": { "adaptiveIcon": { "backgroundColor": "#0D0D0D" } }
+  }
+}

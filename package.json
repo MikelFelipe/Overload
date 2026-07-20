@@ -4,8 +4,12 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "dev": "concurrently \"npm run dev --prefix backend\" \"npm start --prefix frontend\"",
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "concurrently \"npm run dev --prefix backend\" \"npm start --prefix mobile\"",
+    "web": "npm run web --prefix mobile",
+    "typecheck": "npm run typecheck --prefix shared && npm run typecheck --prefix mobile && npm run build --prefix backend",
+    "check:platform": "node scripts/check-platform-branches.js",
+    "test": "npm test --prefix mobile",
+    "validate": "npm run typecheck && npm run check:platform && npm test --prefix mobile && npm run export:web --prefix mobile",
     "docs:generate": "node scripts/generate-docs.js",
     "docs:watch": "node scripts/docs-watch.js"
   },

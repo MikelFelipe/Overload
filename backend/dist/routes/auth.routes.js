@@ -4,7 +4,6 @@ const express_1 = require("express");
 const auth_middleware_1 = require("../middleware/auth.middleware");
 const auth_service_1 = require("../services/auth.service");
 const router = (0, express_1.Router)();
-const cookieOptions = { httpOnly: true, sameSite: 'lax', secure: process.env.NODE_ENV === 'production', maxAge: 7 * 24 * 60 * 60 * 1000, path: '/' };
 const clientIp = (request) => request.ip || request.socket.remoteAddress || 'unknown';
 const handleError = (error, res, fallback) => {
     if (error instanceof auth_service_1.ValidationError)
@@ -43,8 +42,7 @@ catch (error) {
 } });
 router.post('/otp/verify', async (req, res) => { try {
     const result = await (0, auth_service_1.verifyOtp)(req.body.challengeId || '', req.body.code || '');
-    res.cookie('session', result.token, cookieOptions);
-    return res.json({ user: result.user });
+    return res.json({ user: result.user, token: result.token });
 }
 catch (error) {
     return handleError(error, res, 'Unable to verify code');
