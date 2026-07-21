@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { authenticate, AuthRequest } from '../middleware/auth.middleware';
-import { getSessionUser, loginUser, registerUser, resendOtp, resendVerification, ValidationError, verifyOtp, verifyUser } from '../services/auth.service';
+import { getPreferences, getSessionUser, loginUser, registerUser, resendOtp, resendVerification, updatePreferences, ValidationError, verifyOtp, verifyUser } from '../services/auth.service';
 
 const router = Router();
 const clientIp = (request: AuthRequest) => request.ip || request.socket.remoteAddress || 'unknown';
@@ -16,6 +16,8 @@ router.post('/login', async (req, res) => { try { return res.json(await loginUse
 router.post('/otp/verify', async (req, res) => { try { const result = await verifyOtp(req.body.challengeId || '', req.body.code || ''); return res.json({ user: result.user, token: result.token }); } catch (error) { return handleError(error, res, 'Unable to verify code'); } });
 router.post('/otp/resend', async (req, res) => { try { return res.json(await resendOtp(req.body.challengeId || '', clientIp(req))); } catch (error) { return handleError(error, res, 'Unable to resend code'); } });
 router.get('/session', authenticate, async (req: AuthRequest, res) => { const user = await getSessionUser(req.userId!); return user ? res.json({ user }) : res.status(401).json({ error: 'Unauthorized' }); });
+router.get('/preferences', authenticate, async (req: AuthRequest, res) => { try { return res.json({ user: await getPreferences(req.userId!) }); } catch (error) { return handleError(error, res, 'Unable to load settings'); } });
+router.patch('/preferences', authenticate, async (req: AuthRequest, res) => { try { return res.json({ user: await updatePreferences(req.userId!, req.body) }); } catch (error) { return handleError(error, res, 'Unable to update settings'); } });
 router.post('/logout', (_req, res) => { res.clearCookie('session', { httpOnly: true, sameSite: 'lax' as const, secure: process.env.NODE_ENV === 'production', path: '/' }); return res.status(204).send(); });
 
 export default router;

@@ -10,6 +10,10 @@ export interface UserProfile {
   createdAt: string;
   updatedAt: string;
   lastLoginDate?: string;
+  weeklyTarget: number;
+  timezone: string;
+  theme: 'system' | 'light' | 'dark';
+  notificationsEnabled: boolean;
 }
 
 export interface PendingRegistration {

@@ -34,6 +34,7 @@ export interface SessionRecord {
   splitId: string;
   date: string;
   time: string;
+  notes?: string;
   exercises: SessionExercise[];
   createdAt: string;
 }

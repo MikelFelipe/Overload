@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getSessionUser = exports.resendOtp = exports.verifyOtp = exports.loginUser = exports.verifyUser = exports.resendVerification = exports.registerUser = exports.ValidationError = void 0;
+exports.updatePreferences = exports.getPreferences = exports.getSessionUser = exports.resendOtp = exports.verifyOtp = exports.loginUser = exports.verifyUser = exports.resendVerification = exports.registerUser = exports.ValidationError = void 0;
 const crypto_1 = require("crypto");
 const nodemailer_1 = __importDefault(require("nodemailer"));
 require("../config/env");
@@ -26,7 +26,7 @@ const clientKey = (email, ip) => `${normalizeEmail(email)}:${ip}`;
 const dbError = (error) => { if (error)
     throw new Error(error.message); };
 const toPending = (row) => ({ id: row.id, email: row.email, firstName: row.first_name, lastName: row.last_name, middleName: row.middle_name || undefined, phoneNumber: row.phone_number, verificationTokenHash: row.verification_token_hash, verificationTokenExpiresAt: row.verification_token_expires_at, resendAvailableAt: row.resend_available_at, createdAt: row.created_at });
-const toProfile = (row) => ({ id: row.id, email: row.email, name: row.name, firstName: row.first_name, lastName: row.last_name, middleName: row.middle_name || undefined, phoneNumber: row.phone_number, unitPreference: row.unit_preference, createdAt: row.created_at, updatedAt: row.updated_at, lastLoginDate: row.last_login_date || undefined });
+const toProfile = (row) => ({ id: row.id, email: row.email, name: row.name, firstName: row.first_name, lastName: row.last_name, middleName: row.middle_name || undefined, phoneNumber: row.phone_number, unitPreference: row.unit_preference, createdAt: row.created_at, updatedAt: row.updated_at, lastLoginDate: row.last_login_date || undefined, weeklyTarget: Number(row.weekly_target) || 3, timezone: row.timezone || 'UTC', theme: row.theme || 'system', notificationsEnabled: row.notifications_enabled !== false });
 const sendMail = async (to, subject, html, devUrl) => { const info = await transporter.sendMail({ from: EMAIL_FROM, to, subject, html }); if (!hasSmtpConfiguration)
     console.log('Development email:', devUrl || info.messageId); };
 const sendVerificationEmail = async (pending, token) => sendMail(pending.email, 'Verify your Overload account', `<p>Hi ${pending.firstName},</p><p><a href="${FRONTEND_URL}/verify?token=${encodeURIComponent(token)}">Verify your email</a></p><p>This link expires in 24 hours.</p>`);
@@ -89,3 +89,9 @@ exports.resendOtp = resendOtp;
 const getSessionUser = async (userId) => { const { data, error } = await (0, supabase_1.getSupabase)().from('profiles').select('*').eq('id', userId).maybeSingle(); dbError(error); if (!data)
     return undefined; const user = toProfile(data); return { userId: user.id, name: user.name, email: user.email, unitPreference: user.unitPreference }; };
 exports.getSessionUser = getSessionUser;
+const getPreferences = async (userId) => { const { data, error } = await (0, supabase_1.getSupabase)().from('profiles').select('*').eq('id', userId).maybeSingle(); dbError(error); if (!data)
+    throw new Error('Account profile not found.'); return toProfile(data); };
+exports.getPreferences = getPreferences;
+const updatePreferences = async (userId, input) => { const name = typeof input?.name === 'string' ? input.name.trim() : ''; const firstName = typeof input?.firstName === 'string' ? input.firstName.trim() : ''; const lastName = typeof input?.lastName === 'string' ? input.lastName.trim() : ''; const phoneNumber = typeof input?.phoneNumber === 'string' ? input.phoneNumber.trim() : ''; const weeklyTarget = Number(input?.weeklyTarget); if (!name || !firstName || !lastName || !phoneNumber || !Number.isInteger(weeklyTarget) || weeklyTarget < 1 || weeklyTarget > 7)
+    throw new ValidationError({ name: 'Profile details and a weekly target from 1 to 7 are required.' }); const values = { name, first_name: firstName, last_name: lastName, middle_name: typeof input?.middleName === 'string' ? input.middleName.trim() || null : null, phone_number: phoneNumber, unit_preference: input?.unitPreference === 'lbs' ? 'lbs' : 'kg', weekly_target: weeklyTarget, timezone: typeof input?.timezone === 'string' && input.timezone.trim() ? input.timezone.trim() : 'UTC', theme: ['system', 'light', 'dark'].includes(input?.theme) ? input.theme : 'system', notifications_enabled: input?.notificationsEnabled !== false }; const { data, error } = await (0, supabase_1.getSupabase)().from('profiles').update(values).eq('id', userId).select('*').single(); dbError(error); return toProfile(data); };
+exports.updatePreferences = updatePreferences;

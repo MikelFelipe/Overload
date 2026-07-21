@@ -54,5 +54,17 @@ catch (error) {
     return handleError(error, res, 'Unable to resend code');
 } });
 router.get('/session', auth_middleware_1.authenticate, async (req, res) => { const user = await (0, auth_service_1.getSessionUser)(req.userId); return user ? res.json({ user }) : res.status(401).json({ error: 'Unauthorized' }); });
+router.get('/preferences', auth_middleware_1.authenticate, async (req, res) => { try {
+    return res.json({ user: await (0, auth_service_1.getPreferences)(req.userId) });
+}
+catch (error) {
+    return handleError(error, res, 'Unable to load settings');
+} });
+router.patch('/preferences', auth_middleware_1.authenticate, async (req, res) => { try {
+    return res.json({ user: await (0, auth_service_1.updatePreferences)(req.userId, req.body) });
+}
+catch (error) {
+    return handleError(error, res, 'Unable to update settings');
+} });
 router.post('/logout', (_req, res) => { res.clearCookie('session', { httpOnly: true, sameSite: 'lax', secure: process.env.NODE_ENV === 'production', path: '/' }); return res.status(204).send(); });
 exports.default = router;

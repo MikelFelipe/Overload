@@ -40,6 +40,7 @@ export interface SessionRecord {
     splitId: string;
     date: string;
     time: string;
+    notes?: string;
     exercises: SessionExercise[];
 }
 export interface Gym {
@@ -50,15 +51,26 @@ export interface Gym {
     hours: string;
     distanceKm: number;
 }
+export interface WeeklyStreak {
+    current: number;
+    best: number;
+    completedWeeks: number;
+    target: number;
+}
 export interface DashboardData {
     splits: Split[];
     sessions: SessionRecord[];
     gyms: Gym[];
+    weeklyStreak?: WeeklyStreak;
+    stats?: {
+        weeklyStreak?: WeeklyStreak;
+    };
 }
 export type SplitPayload = Omit<Split, 'id'>;
 export interface CreateSessionPayload {
     splitId: string;
     date: string;
+    notes?: string;
     exercises: Array<{
         exerciseId: string;
         weight: number;
@@ -69,4 +81,30 @@ export interface CreateSessionPayload {
 export interface OtpVerifyResponse {
     user: User;
     token?: string;
+}
+export interface ProfilePreferences {
+    id: string;
+    email: string;
+    name: string;
+    firstName: string;
+    lastName: string;
+    middleName?: string;
+    phoneNumber: string;
+    unitPreference: 'kg' | 'lbs';
+    weeklyTarget: number;
+    timezone: string;
+    theme: 'system' | 'light' | 'dark';
+    notificationsEnabled: boolean;
+}
+export interface ProfilePreferencesUpdate {
+    name: string;
+    firstName: string;
+    lastName: string;
+    middleName?: string;
+    phoneNumber: string;
+    unitPreference: 'kg' | 'lbs';
+    weeklyTarget: number;
+    timezone: string;
+    theme: 'system' | 'light' | 'dark';
+    notificationsEnabled: boolean;
 }
