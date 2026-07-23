@@ -1,0 +1,13 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.preferencesSchema = exports.refreshSchema = exports.otpResendSchema = exports.otpVerifySchema = exports.verificationResendSchema = exports.loginSchema = exports.registerSchema = void 0;
+const zod_1 = require("zod");
+const email = zod_1.z.string().trim().email().max(320);
+const password = zod_1.z.string().min(8).max(200);
+exports.registerSchema = zod_1.z.object({ firstName: zod_1.z.string().trim().min(1).max(80), lastName: zod_1.z.string().trim().min(1).max(80), middleName: zod_1.z.string().trim().max(80).optional(), email, phoneNumber: zod_1.z.string().regex(/^\d{11}$/), password });
+exports.loginSchema = zod_1.z.object({ email, password });
+exports.verificationResendSchema = zod_1.z.object({ email });
+exports.otpVerifySchema = zod_1.z.object({ challengeId: zod_1.z.string().min(1).max(200), code: zod_1.z.string().regex(/^\d{6}$/) });
+exports.otpResendSchema = zod_1.z.object({ challengeId: zod_1.z.string().min(1).max(200) });
+exports.refreshSchema = zod_1.z.object({ refreshToken: zod_1.z.string().min(1) });
+exports.preferencesSchema = zod_1.z.object({ name: zod_1.z.string().trim().min(1).max(160), firstName: zod_1.z.string().trim().min(1).max(80), lastName: zod_1.z.string().trim().min(1).max(80), middleName: zod_1.z.string().trim().max(80).optional(), phoneNumber: zod_1.z.string().regex(/^\d{11}$/), unitPreference: zod_1.z.enum(['kg', 'lbs']), weeklyTarget: zod_1.z.number().int().min(1).max(14), timezone: zod_1.z.string().min(1).max(100), theme: zod_1.z.enum(['system', 'light', 'dark']), notificationsEnabled: zod_1.z.boolean() });

@@ -1,4 +1,5 @@
 export type WeightUnit = 'kg' | 'lb';
+export type SplitType = 'full_body' | 'upper' | 'lower' | 'anterior' | 'posterior' | 'push' | 'pull' | 'legs' | 'custom';
 export interface User {
     userId: string;
     name: string;
@@ -23,6 +24,7 @@ export interface Split {
     id: string;
     name: string;
     color: string;
+    splitType?: SplitType;
     exercises: Exercise[];
     isActive: boolean;
 }
